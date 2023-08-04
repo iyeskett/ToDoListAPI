@@ -13,8 +13,12 @@ namespace ToDoListAPI.Services
             _context = context;
         }
 
-        public async Task InsertUser(User user) => await _context.User.AddAsync(user);
+        public async Task<User> GetUserByIdAsync(int id) => await _context.User.FirstOrDefaultAsync(user => user.Id == id);
 
-        public async Task GetUser(int id) => await _context.User.FirstOrDefaultAsync(user => user.Id == id);
+        public async Task InsertUser(User user)
+        {
+            await _context.User.AddAsync(user);
+            await _context.SaveChangesAsync();
+        }
     }
 }
