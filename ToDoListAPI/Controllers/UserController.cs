@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using ToDoListAPI.Data;
 using ToDoListAPI.Models;
 using ToDoListAPI.Services;
+using ToDoListAPI.Services.Exceptions;
 
 namespace ToDoListAPI.Controllers
 {
@@ -32,10 +33,11 @@ namespace ToDoListAPI.Controllers
             {
                 User user = await _userService.GetUserByIdAsync(id);
 
-                if (user == null)
-                    return NotFound();
-
                 return StatusCode(200, new { user.Id, user.Email, user.Username });
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(new { message = e.Message });
             }
             catch (Exception)
             {
@@ -50,7 +52,7 @@ namespace ToDoListAPI.Controllers
             try
             {
                 if (ModelState.IsValid)
-                    await _userService.InsertUser(user);
+                    await _userService.InsertUserAsync(user);
                 else
                     return BadRequest(ModelState);
 
@@ -59,6 +61,48 @@ namespace ToDoListAPI.Controllers
             catch (Exception)
             {
                 return StatusCode(500, "Erro ao criar usuário");
+            }
+        }
+
+        // PUT: api/User
+        [HttpPut]
+        public async Task<ActionResult<User>> UpdateUser(User user)
+        {
+            try
+            {
+                if (ModelState.IsValid)
+                    await _userService.UpdateUserAsync(user);
+                else
+                    return BadRequest(ModelState);
+
+                return CreatedAtAction("NewUser", user);
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(new { message = e.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Erro ao atualizar usuário");
+            }
+        }
+
+        // DELETE: api/User
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> DeleteUser(int id)
+        {
+            try
+            {
+                await _userService.DeleteUserByIdAsync(id);
+                return Ok();
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(new { message = e.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Erro ao excluir usuário");
             }
         }
     }
