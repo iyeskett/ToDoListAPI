@@ -16,6 +16,8 @@ namespace ToDoListAPI.Services
 
         public async Task<User> GetUserByIdAsync(int id) => await _context.User.FirstOrDefaultAsync(user => user.Id == id) ?? throw new NotFoundException("Usuário não encontrado");
 
+        public async Task<User> GetUserByEmailAsync(string email) => await _context.User.FirstOrDefaultAsync(user => user.Email == email) ?? throw new NotFoundException("Usuário não encontrado");
+
         public async Task InsertUserAsync(User user)
         {
             await _context.User.AddAsync(user);

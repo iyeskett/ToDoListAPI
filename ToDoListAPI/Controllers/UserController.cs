@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
-using ToDoListAPI.Data;
 using ToDoListAPI.Models;
 using ToDoListAPI.Services;
 using ToDoListAPI.Services.Exceptions;
@@ -16,6 +8,7 @@ namespace ToDoListAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
@@ -47,10 +40,13 @@ namespace ToDoListAPI.Controllers
 
         // POST: api/User
         [HttpPost]
+        [AllowAnonymous]
         public async Task<ActionResult<User>> NewUser(User user)
         {
             try
             {
+                user.Role = "general";
+                ModelState.Remove("Role");
                 if (ModelState.IsValid)
                     await _userService.InsertUserAsync(user);
                 else
@@ -89,6 +85,7 @@ namespace ToDoListAPI.Controllers
 
         // DELETE: api/User
         [HttpDelete("{id}")]
+        [Authorize(Roles = "admin")]
         public async Task<ActionResult> DeleteUser(int id)
         {
             try
@@ -103,6 +100,33 @@ namespace ToDoListAPI.Controllers
             catch (Exception)
             {
                 return StatusCode(500, "Erro ao excluir usuário");
+            }
+        }
+
+        // POST: api/User/Login
+        [HttpPost("Login")]
+        [AllowAnonymous]
+        public async Task<ActionResult> Login(UserLogin user)
+        {
+            try
+            {
+                User dbUser = await _userService.GetUserByEmailAsync(user.Email);
+
+                if (dbUser.Password != user.Password)
+                    return Unauthorized(new { message = "Senha incorreta" });
+
+                // Generate token
+                var token = TokenService.GenerateToken(dbUser);
+
+                return Ok(new { dbUser.Username, token });
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(new { message = e.Message });
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
     }
