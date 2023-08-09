@@ -45,6 +45,14 @@ namespace ToDoListAPI.Controllers
         {
             try
             {
+                bool isDuplicate = await _userService.IsDuplicateEmail(user.Email);
+                if (isDuplicate)
+                    return Conflict(new { message = "Já existe uma conta com esse email" });
+
+                isDuplicate = await _userService.IsDuplicateUsername(user.Username);
+                if (isDuplicate)
+                    return Conflict(new { message = "Já existe uma conta com esse usuário" });
+
                 user.Role = "general";
                 ModelState.Remove("Role");
                 if (ModelState.IsValid)
