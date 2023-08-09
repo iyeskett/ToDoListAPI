@@ -9,11 +9,13 @@ namespace ToDoListAPI.Data
 {
     public class ToDoListAPIContext : DbContext
     {
-        public ToDoListAPIContext (DbContextOptions<ToDoListAPIContext> options)
+        public ToDoListAPIContext(DbContextOptions<ToDoListAPIContext> options)
             : base(options)
         {
         }
 
         public DbSet<ToDoListAPI.Models.User> User { get; set; } = default!;
+
+        public DbSet<ToDoListAPI.Models.ToDo>? ToDo { get; set; }
     }
 }

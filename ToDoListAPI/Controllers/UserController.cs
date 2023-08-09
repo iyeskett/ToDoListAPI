@@ -60,7 +60,7 @@ namespace ToDoListAPI.Controllers
                 else
                     return BadRequest(ModelState);
 
-                return CreatedAtAction("GetUser", new { id = user.Id }, user);
+                return Created("GetUser", new { user.Id, user.Email, user.Username });
             }
             catch (Exception)
             {

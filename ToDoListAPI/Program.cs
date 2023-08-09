@@ -21,6 +21,7 @@ builder.Services.AddSwaggerGen();
 // Added
 
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<ToDoService>();
 
 var key = Encoding.ASCII.GetBytes(Settings.Secret);
 

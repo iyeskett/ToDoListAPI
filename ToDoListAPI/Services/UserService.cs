@@ -18,6 +18,12 @@ namespace ToDoListAPI.Services
 
         public async Task<User> GetUserByEmailAsync(string email) => await _context.User.FirstOrDefaultAsync(user => user.Email == email) ?? throw new NotFoundException("Usuário não encontrado");
 
+        public async Task<User> GetUserByUsernameAsync(string username) => await _context.User.FirstOrDefaultAsync(user => user.Username == username) ?? throw new NotFoundException("Usuário não encontrado");
+
+        public async Task<bool> IsDuplicateEmail(string email) => await _context.User.FirstOrDefaultAsync(user => user.Email == email) != null;
+
+        public async Task<bool> IsDuplicateUsername(string username) => await _context.User.FirstOrDefaultAsync(user => user.Username == username) != null;
+
         public async Task InsertUserAsync(User user)
         {
             await _context.User.AddAsync(user);
