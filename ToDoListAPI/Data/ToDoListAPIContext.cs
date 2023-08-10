@@ -17,5 +17,9 @@ namespace ToDoListAPI.Data
         public DbSet<ToDoListAPI.Models.User> User { get; set; } = default!;
 
         public DbSet<ToDoListAPI.Models.ToDo>? ToDo { get; set; }
+
+        public DbSet<ToDoListAPI.Models.ToDoList>? ToDoList { get; set; }
+        public DbSet<ToDoListAPI.Models.ToDoListCollaborator>? ToDoListCollaborator { get; set; }
+        public DbSet<ToDoListAPI.Models.ToDosList>? ToDoLists { get; set; }
     }
 }

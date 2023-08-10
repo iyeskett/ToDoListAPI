@@ -19,7 +19,7 @@ namespace ToDoListAPI.Services
                     new Claim(ClaimTypes.Name, user.Username), // User.Identity.Name
                     new Claim(ClaimTypes.Role, user.Role) // User.IsInRole
                 }),
-                Expires = DateTime.UtcNow.AddHours(1), // Expiration Hour
+                Expires = DateTime.UtcNow.AddDays(1), // Expiration Hour
                 NotBefore = DateTime.UtcNow,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };

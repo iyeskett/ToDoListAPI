@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ToDoListAPI.Data;
 
@@ -11,9 +12,10 @@ using ToDoListAPI.Data;
 namespace ToDoListAPI.Migrations
 {
     [DbContext(typeof(ToDoListAPIContext))]
-    partial class ToDoListAPIContextModelSnapshot : ModelSnapshot
+    [Migration("20230809025913_AddToDoList")]
+    partial class AddToDoList
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,6 +61,9 @@ namespace ToDoListAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
 
+                    b.Property<int>("AdminId")
+                        .HasColumnType("int");
+
                     b.Property<bool>("Closed")
                         .HasColumnType("bit");
 
@@ -66,37 +71,11 @@ namespace ToDoListAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("AdminId");
 
                     b.ToTable("ToDoList");
-                });
-
-            modelBuilder.Entity("ToDoListAPI.Models.ToDoListCollaborator", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
-
-                    b.Property<int>("ToDoListId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ToDoListId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ToDoListCollaborator");
                 });
 
             modelBuilder.Entity("ToDoListAPI.Models.User", b =>
@@ -147,32 +126,13 @@ namespace ToDoListAPI.Migrations
 
             modelBuilder.Entity("ToDoListAPI.Models.ToDoList", b =>
                 {
-                    b.HasOne("ToDoListAPI.Models.User", "User")
+                    b.HasOne("ToDoListAPI.Models.User", "Admin")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("AdminId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ToDoListAPI.Models.ToDoListCollaborator", b =>
-                {
-                    b.HasOne("ToDoListAPI.Models.ToDoList", "ToDoList")
-                        .WithMany()
-                        .HasForeignKey("ToDoListId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ToDoListAPI.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ToDoList");
-
-                    b.Navigation("User");
+                    b.Navigation("Admin");
                 });
 
             modelBuilder.Entity("ToDoListAPI.Models.User", b =>
