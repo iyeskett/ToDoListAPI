@@ -20,6 +20,5 @@ namespace ToDoListAPI.Data
 
         public DbSet<ToDoListAPI.Models.ToDoList>? ToDoList { get; set; }
         public DbSet<ToDoListAPI.Models.ToDoListCollaborator>? ToDoListCollaborator { get; set; }
-        public DbSet<ToDoListAPI.Models.ToDosList>? ToDoLists { get; set; }
     }
 }

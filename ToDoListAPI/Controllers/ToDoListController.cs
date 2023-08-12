@@ -20,12 +20,14 @@ namespace ToDoListAPI.Controllers
     public class ToDoListController : ControllerBase
     {
         private readonly ToDoListService _toDoListService;
+        private readonly ToDoService _toDoService;
         private readonly UserService _userService;
 
-        public ToDoListController(ToDoListService toDoListService, UserService userService)
+        public ToDoListController(ToDoListService toDoListService, UserService userService, ToDoService toDoService)
         {
             _toDoListService = toDoListService;
             _userService = userService;
+            _toDoService = toDoService;
         }
 
         // GET: api/ToDoLists/1
@@ -37,11 +39,11 @@ namespace ToDoListAPI.Controllers
                 User dbUser = await _userService.GetUserByIdAsync(userId);
 
                 if (dbUser.Username != User.Identity.Name)
-                    return StatusCode(409, new { message = "Sem autorização." });
+                    return StatusCode(403, new { message = "Sem autorização." });
 
                 IEnumerable<object> toDoLists = _toDoListService.GetToDoListsByUserId(userId);
 
-                return Ok(toDoLists);
+                return Ok(new { ToDoLists = toDoLists });
             }
             catch (NotFoundException e)
             {
@@ -64,15 +66,24 @@ namespace ToDoListAPI.Controllers
                 User dbUser = await _userService.GetUserByIdAsync(dbToDoList.User.Id);
 
                 if (dbUser.Username != User.Identity.Name)
-                    return StatusCode(409, new { message = "Sem autorização." });
+                    return StatusCode(403, new { message = "Sem autorização." });
+
+                var dbToDos = _toDoService.GetToDoByToDoListIdAsync(dbToDoList.Id)
+                    .Select(_ => new
+                    {
+                        _.Id,
+                        _.Title,
+                        _.Description
+                    });
 
                 return Ok(
                     new
                     {
                         dbToDoList.Id,
                         dbToDoList.Name,
-                        User = new User { Id = dbToDoList.UserId, Username = dbToDoList.User.Username, Email = dbToDoList.User.Email },
-                        dbToDoList.Closed
+                        dbToDoList.UserId,
+                        dbToDoList.Closed,
+                        ToDos = dbToDos
                     });
             }
             catch (NotFoundException e)
@@ -99,7 +110,7 @@ namespace ToDoListAPI.Controllers
                 User dbUser = await _userService.GetUserByIdAsync(dbToDoList.User.Id);
 
                 if (dbUser.Username != User.Identity.Name)
-                    return StatusCode(409, new { message = "Sem autorização." });
+                    return StatusCode(403, new { message = "Sem autorização." });
 
                 toDoList.Id = id;
                 dbToDoList = await _toDoListService.UpdateToDoListAsync(toDoList);
@@ -162,7 +173,7 @@ namespace ToDoListAPI.Controllers
                 ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(id);
 
                 if (dbUser.Id != dbToDoList.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa lista de tarefas." });
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa lista de tarefas." });
 
                 await _toDoListService.DeleteToDoListAsync(id);
                 return Ok(new { message = "Lista de tarefas excluída com sucesso." });
@@ -179,7 +190,7 @@ namespace ToDoListAPI.Controllers
 
         // PUT: api/ToDos/setAsClosed/5
         [HttpPut("setAsClosed/{id}")]
-        public async Task<IActionResult> SetAsClosed(int id, [FromBody] bool closed)
+        public async Task<IActionResult> SetAsClosed(int id, bool closed)
         {
             try
             {
@@ -188,7 +199,7 @@ namespace ToDoListAPI.Controllers
                 ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(id);
 
                 if (dbUser.Id != dbToDoList.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa tarefa." });
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa tarefa." });
 
                 dbToDoList.Closed = closed;
                 await _toDoListService.UpdateToDoListAsync(dbToDoList);
@@ -218,7 +229,7 @@ namespace ToDoListAPI.Controllers
             ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(toDoListId);
 
             if (dbToDoList.UserId != dbUser.Id)
-                return StatusCode(409, new { message = "Sem autorização." });
+                return StatusCode(403, new { message = "Sem autorização." });
 
             List<User> collaborators = await _toDoListService.GetCollaboratorsAsync(dbToDoList.Id);
 
@@ -239,13 +250,13 @@ namespace ToDoListAPI.Controllers
                 ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(toDoListId);
 
                 if (dbToDoList.UserId != dbUser.Id)
-                    return StatusCode(409, new { message = "Sem autorização." });
+                    return StatusCode(403, new { message = "Sem autorização." });
 
                 dbUser = await _userService.GetUserByIdAsync(userId);
 
                 bool added = await _toDoListService.AddCollaboratorAsync(toDoListId, userId);
                 if (!added)
-                    return BadRequest(new { message = $"O usuário {dbUser.Username} #{dbUser.Id} já é um colaborador da lista de tarefas {dbToDoList.Name} #{dbToDoList.Id}" });
+                    return StatusCode(409, new { message = $"O usuário {dbUser.Username} #{dbUser.Id} já é um colaborador da lista de tarefas {dbToDoList.Name} #{dbToDoList.Id}" });
 
                 return Ok(new { message = $"Colaborador {dbUser.Username} #{dbUser.Id} adicionado a lista de tarefas {dbToDoList.Name} #{dbToDoList.Id}" });
             }
@@ -268,7 +279,7 @@ namespace ToDoListAPI.Controllers
                 ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(toDoListId);
 
                 if (dbToDoList.UserId != dbUser.Id)
-                    return StatusCode(409, new { message = "Sem autorização." });
+                    return StatusCode(403, new { message = "Sem autorização." });
 
                 await _toDoListService.DeleteCollaboratorAsync(toDoListId, userId);
 
@@ -283,6 +294,63 @@ namespace ToDoListAPI.Controllers
             catch (Exception)
             {
                 return StatusCode(500, new { message = "Erro ao atualizar tarefa." });
+            }
+        }
+
+        [HttpPost("ToDo/{toDoListId}/{toDoId}")]
+        public async Task<ActionResult> AddToDo(int toDoListId, int toDoId)
+        {
+            try
+            {
+                ToDo dbToDo = await _toDoService.GetToDoByIdAsync(toDoId);
+                ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(toDoListId);
+                User dbUser = await _userService.GetUserByIdAsync(dbToDo.UserId);
+
+                if (User.Identity.Name != dbUser.Username)
+                    return StatusCode(403, new { message = "Sem autorização." });
+
+                if (dbToDo.ToDoListId != null)
+                    return StatusCode(409, new { message = $"A tarefa {dbToDo.Title} #{dbToDo.Id} já está em uma lista de tarefas" });
+                if (dbToDoList.Closed)
+                    return StatusCode(409, new { message = $"A lista de tarefas {dbToDoList.Name} #{dbToDoList.Id} está fechada" });
+
+                await _toDoListService.AddToDoAsync(toDoId, toDoListId);
+
+                return Ok(new { message = $"Tarefa {dbToDo.Title} #{dbToDo.Id} adicionada a lista de tarefas {dbToDoList.Name} #{dbToDoList.Id}" });
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(new { message = e.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "Erro ao adicionar tarefa nas lista de tarefas." });
+            }
+        }
+
+        [HttpDelete("ToDo/{toDoListId}/{toDoId}")]
+        public async Task<ActionResult> RemoveToDo(int toDoListId, int toDoId)
+        {
+            try
+            {
+                ToDo dbToDo = await _toDoService.GetToDoByIdAsync(toDoId);
+                ToDoList dbToDoList = await _toDoListService.GetToDoListByIdAsync(toDoListId);
+                User dbUser = await _userService.GetUserByIdAsync(dbToDo.UserId);
+
+                if (User.Identity.Name != dbUser.Username)
+                    return StatusCode(403, new { message = "Sem autorização." });
+
+                await _toDoListService.DeleteToDoAsync(toDoId, toDoListId);
+
+                return Ok(new { message = $"Tarefa {dbToDo.Title} #{dbToDo.Id} removida da lista de tarefas {dbToDoList.Name} #{dbToDoList.Id}" });
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(new { message = e.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "Erro ao adicionar tarefa nas lista de tarefas." });
             }
         }
     }

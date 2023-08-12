@@ -24,10 +24,10 @@ namespace ToDoListAPI.Services
             {
                 _.Id,
                 _.Name,
-                User = new User { Id = _.UserId, Username = _.User.Username, Email = _.User.Email },
+                _.UserId,
                 _.Closed
             })
-            .Where(_ => _.User.Id == userId).ToList() ?? throw new NotFoundException("Lista de tarefas não encontrada");
+            .Where(_ => _.UserId == userId).ToList() ?? throw new NotFoundException("Lista de tarefas não encontrada");
 
         public async Task InsertToDoListAsync(ToDoList toDoList)
         {
@@ -113,9 +113,9 @@ namespace ToDoListAPI.Services
             ToDo dbToDo = await _context.ToDo.FirstOrDefaultAsync(_ => _.Id == toDoId) ?? throw new NotFoundException("Tarefa não encontrada.");
             ToDoList dbToDoList = await _context.ToDoList.FirstOrDefaultAsync(_ => _.Id == toDoListId) ?? throw new NotFoundException("Lista de tarefas não encontrada.");
 
-            ToDosList toDoLists = new() { ToDoId = dbToDo.Id, ToDoListId = dbToDoList.Id };
+            dbToDo.ToDoListId = dbToDoList.Id;
 
-            await _context.ToDoLists.AddAsync(toDoLists);
+            _context.ToDo.Update(dbToDo);
             await _context.SaveChangesAsync();
         }
 
@@ -124,10 +124,10 @@ namespace ToDoListAPI.Services
             ToDo dbToDo = await _context.ToDo.FirstOrDefaultAsync(_ => _.Id == toDoId) ?? throw new NotFoundException("Tarefa não encontrada.");
             ToDoList dbToDoList = await _context.ToDoList.FirstOrDefaultAsync(_ => _.Id == toDoListId) ?? throw new NotFoundException("Lista de tarefas não encontrada.");
 
-            ToDosList dbToDoLists = await _context.ToDoLists.FirstOrDefaultAsync() ??
-                throw new NotFoundException($"Tarefa {dbToDo.Title} #{dbToDo.Id} não encontrada na lista de tarefas {dbToDoList.Name} #{dbToDoList.Id}");
+            if (dbToDo.ToDoListId == dbToDoList.Id)
+                dbToDo.ToDoListId = null;
 
-            await _context.ToDoLists.AddAsync(dbToDoLists);
+            _context.ToDo.Update(dbToDo);
             await _context.SaveChangesAsync();
         }
     }

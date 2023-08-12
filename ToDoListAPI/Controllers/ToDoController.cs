@@ -32,9 +32,58 @@ namespace ToDoAPI.Controllers
                 ToDo dbToDo = await _toDoService.GetToDoByIdAsync(id);
 
                 if (dbUser.Id != dbToDo.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa tarefa." });
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa tarefa." });
 
                 return Ok(new { dbToDo.Id, dbToDo.Title, dbToDo.Description, dbToDo.UserId, dbToDo.Done });
+            }
+            catch (NotFoundException e)
+            {
+                return NotFound(e.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "Erro ao pesquisar tarefa." });
+            }
+        }
+
+        // GET: api/ToDo/User/1
+        [HttpGet("User/{userId}")]
+        public async Task<ActionResult<ToDo>> GetToDoByUserId(int userId, bool all)
+        {
+            try
+            {
+                User dbUser = await _userService.GetUserByUsernameAsync(User.Identity.Name);
+
+                if (dbUser.Id != userId)
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa tarefa." });
+
+                IEnumerable<object> dbToDos;
+
+                if (!all)
+                {
+                    dbToDos = _toDoService.GetToDoByUserIdAsync(userId)
+                        .Where(_ => _.ToDoListId == null)
+                        .Select(_ =>
+                            new
+                            {
+                                _.Id,
+                                _.Title,
+                                _.Description,
+                            });
+                }
+                else
+                {
+                    dbToDos = dbToDos = _toDoService.GetToDoByUserIdAsync(userId)
+                        .Select(_ =>
+                            new
+                            {
+                                _.Id,
+                                _.Title,
+                                _.Description,
+                            });
+                }
+
+                return Ok(new { ToDos = dbToDos });
             }
             catch (NotFoundException e)
             {
@@ -54,25 +103,24 @@ namespace ToDoAPI.Controllers
             {
                 User dbUser = await _userService.GetUserByUsernameAsync(User.Identity.Name);
 
-                if (dbUser.Id != toDo.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa tarefa." });
-
+                toDo.UserId = dbUser.Id;
                 toDo.User = dbUser;
                 ModelState.Remove("User");
+                ModelState.Remove("ToDoList");
                 if (ModelState.IsValid)
                     await _toDoService.InsertToDoAsync(toDo);
                 else
                     return BadRequest(ModelState);
 
-                return CreatedAtAction("GetToDo", new { message = "Tarefa criada com sucesso." }, toDo);
+                return Created("GetToDo", new { message = "Tarefa criada com sucesso." });
             }
             catch (NotFoundException e)
             {
                 return NotFound(e.Message);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                return StatusCode(500, new { message = "Erro ao atualizar tarefa." });
+                return StatusCode(500, new { message = "Erro ao criar tarefa.", e.Message });
             }
         }
 
@@ -87,7 +135,7 @@ namespace ToDoAPI.Controllers
                 ToDo dbToDo = await _toDoService.GetToDoByIdAsync(id);
 
                 if (dbUser.Id != dbToDo.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa tarefa." });
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa tarefa." });
 
                 dbToDo.Title = toDo.Title;
                 dbToDo.Description = toDo.Description;
@@ -112,7 +160,7 @@ namespace ToDoAPI.Controllers
 
         // PUT: api/ToDos/setAsDone/5
         [HttpPut("setAsDone/{id}")]
-        public async Task<IActionResult> SetAsDone(int id, [FromBody] bool done)
+        public async Task<IActionResult> SetAsDone(int id, bool done)
         {
             try
             {
@@ -121,7 +169,7 @@ namespace ToDoAPI.Controllers
                 ToDo dbToDo = await _toDoService.GetToDoByIdAsync(id);
 
                 if (dbUser.Id != dbToDo.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa tarefa." });
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa tarefa." });
 
                 dbToDo.Done = done;
                 await _toDoService.UpdateToDoAsync(dbToDo);
@@ -148,7 +196,7 @@ namespace ToDoAPI.Controllers
                 ToDo dbToDo = await _toDoService.GetToDoByIdAsync(id);
 
                 if (dbUser.Id != dbToDo.UserId)
-                    return StatusCode(409, new { message = "Sem autorização para acessar essa tarefa." });
+                    return StatusCode(403, new { message = "Sem autorização para acessar essa tarefa." });
 
                 await _toDoService.DeleteToDoAsync(id);
                 return Ok(new { message = "Tarefa excluída com sucesso." });

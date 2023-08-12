@@ -20,6 +20,9 @@ namespace ToDoListAPI.Models
         [Required(ErrorMessage = "{0} é obrigatório")]
         public int UserId { get; set; }
 
+        public ToDoList? ToDoList { get; set; }
+        public int? ToDoListId { get; set; }
+
         public bool Done { get; set; }
     }
 }

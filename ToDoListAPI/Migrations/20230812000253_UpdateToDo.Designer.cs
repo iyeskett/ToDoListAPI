@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ToDoListAPI.Data;
 
@@ -11,9 +12,10 @@ using ToDoListAPI.Data;
 namespace ToDoListAPI.Migrations
 {
     [DbContext(typeof(ToDoListAPIContext))]
-    partial class ToDoListAPIContextModelSnapshot : ModelSnapshot
+    [Migration("20230812000253_UpdateToDo")]
+    partial class UpdateToDo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -41,7 +43,7 @@ namespace ToDoListAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("ToDoListId")
+                    b.Property<int>("ToDoListId")
                         .HasColumnType("int");
 
                     b.Property<int>("UserId")
@@ -143,7 +145,9 @@ namespace ToDoListAPI.Migrations
                 {
                     b.HasOne("ToDoListAPI.Models.ToDoList", "ToDoList")
                         .WithMany()
-                        .HasForeignKey("ToDoListId");
+                        .HasForeignKey("ToDoListId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("ToDoListAPI.Models.User", "User")
                         .WithMany()

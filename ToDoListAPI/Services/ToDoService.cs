@@ -16,7 +16,9 @@ namespace ToDoListAPI.Services
 
         public async Task<ToDo> GetToDoByIdAsync(int id) => await _context.ToDo.FirstOrDefaultAsync(_ => _.Id == id) ?? throw new NotFoundException("Tarefa não encontrada");
 
-        public List<ToDo> GetToDoListByUserIdAsync(int userId) => _context.ToDo.Where(_ => _.Id == userId).ToList();
+        public List<ToDo> GetToDoByUserIdAsync(int userId) => _context.ToDo.Where(_ => _.UserId == userId).ToList();
+
+        public List<ToDo> GetToDoByToDoListIdAsync(int toDoListId) => _context.ToDo.Where(_ => _.ToDoListId == toDoListId).ToList();
 
         public async Task InsertToDoAsync(ToDo toDo)
         {
